@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  password      String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  subscription  Subscription?
+  seoScans      SeoScan[]
+  heatMaps      HeatMap[]
+  citations     Citation[]
+}
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  plan          String    // free, basic, pro
+  status        String    // active, cancelled, expired
+  startDate     DateTime  @default(now())
+  endDate       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model SeoScan {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  url           String
+  title         String?
+  metaDescription String?
+  headings      String    // JSON string: { h1: number, h2: number }
+  images        String    // JSON string: { total: number, withoutAlt: number }
+  links         String    // JSON string: { total: number, internal: number, external: number }
+  issues        String    // JSON string array
+  score         Int
+  createdAt     DateTime  @default(now())
+}
+
+model HeatMap {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  url           String
+  keywords      String    // JSON string: { keyword: count }
+  density       String    // JSON string: { keyword: percentage }
+  placement     String    // JSON string: { keyword: { inTitle: boolean, inH1: boolean, inMetaDescription: boolean } }
+  totalWords    Int
+  createdAt     DateTime  @default(now())
+}
+
+model Citation {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  url           String
+  citations     String    // JSON string: { platform: { found: boolean, url: string } }
+  score         Int
+  createdAt     DateTime  @default(now())
+}
+
+model GoogleAuthState {
+  id     String  @id @default(cuid())
+  userId String
+  state  String
+  createdAt DateTime @default(now())
+} 
