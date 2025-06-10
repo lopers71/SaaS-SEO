@@ -84,4 +84,21 @@ export const getKeywords = async (projectId: string) => {
     console.error('Error getting keywords:', error);
     throw error;
   }
+};
+
+// Notification operations
+export const updateNotification = async (notificationId: string, userId: string, updateData: any) => {
+  try {
+    const q = query(collection(db, 'notifications'), where('id', '==', notificationId), where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    if (querySnapshot.empty) {
+      throw new Error('Notification not found or unauthorized');
+    }
+    const docRef = doc(db, 'notifications', querySnapshot.docs[0].id);
+    await updateDoc(docRef, updateData);
+    return { id: docRef.id, ...updateData };
+  } catch (error) {
+    console.error('Error updating notification:', error);
+    throw error;
+  }
 }; 

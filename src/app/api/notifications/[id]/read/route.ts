@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
+import { updateNotification } from '@/services/firebaseService'
 
-const prisma = new PrismaClient()
+export const runtime = 'nodejs' // Explicitly set runtime to nodejs
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } } // Use context to explicitly type the second argument
 ) {
   try {
+    const { params } = context; // Destructure params from context
     const token = cookies().get('token')?.value
 
     if (!token) {
@@ -19,17 +20,16 @@ export async function PUT(
       )
     }
 
+    // Pastikan JWT_SECRET terdefinisi
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
     const userId = decoded.userId
 
-    const notification = await prisma.notification.update({
-      where: {
-        id: params.id,
-        userId,
-      },
-      data: {
-        read: true,
-      },
+    const notification = await updateNotification(params.id, userId, {
+      read: true,
     })
 
     return NextResponse.json(notification)
