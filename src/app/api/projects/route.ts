@@ -1,21 +1,43 @@
 import { NextResponse } from 'next/server';
-import { getProjects, createProject } from '@/services/firebaseService';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
+import { db } from '@/services/firebaseService';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 
-export async function GET() {
+export const runtime = 'nodejs';
+
+export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const token = cookies().get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
     }
 
-    const projects = await getProjects(session.user.email);
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: string };
+    const userId = decoded.userId;
+
+    const projectsRef = collection(db, 'projects');
+    const q = query(projectsRef, where('userId', '==', userId));
+    const querySnapshot = await getDocs(q);
+    
+    const projects = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
     return NextResponse.json(projects);
   } catch (error) {
     console.error('Error fetching projects:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Failed to fetch projects' },
       { status: 500 }
     );
   }
@@ -23,23 +45,51 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const token = cookies().get('token')?.value;
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
     }
 
-    const data = await request.json();
-    const project = await createProject({
-      ...data,
-      userId: session.user.email,
-      createdAt: new Date().toISOString()
-    });
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
 
-    return NextResponse.json(project);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: string };
+    const userId = decoded.userId;
+
+    const body = await request.json();
+    const { name, description } = body;
+
+    if (!name) {
+      return NextResponse.json(
+        { error: 'Project name is required' },
+        { status: 400 }
+      );
+    }
+
+    const projectsRef = collection(db, 'projects');
+    const newProject = {
+      name,
+      description,
+      userId,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+
+    const docRef = await addDoc(projectsRef, newProject);
+
+    return NextResponse.json({
+      id: docRef.id,
+      ...newProject
+    });
   } catch (error) {
     console.error('Error creating project:', error);
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Failed to create project' },
       { status: 500 }
     );
   }
