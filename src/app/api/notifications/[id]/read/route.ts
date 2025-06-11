@@ -3,13 +3,21 @@ import { cookies } from 'next/headers'
 import jwt from 'jsonwebtoken'
 import { updateNotification } from '@/services/firebaseService'
 
-export const runtime = 'nodejs' // Explicitly set runtime to nodejs
+export const runtime = 'nodejs'
+
+// Define a specific type for the route context
+type RouteContext = {
+  params: {
+    id: string
+  }
+}
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  context: RouteContext // Use the defined context type here
 ) {
   try {
+    const { params } = context; // Destructure params from the context object
     const token = cookies().get('token')?.value
 
     if (!token) {
