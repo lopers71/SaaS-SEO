@@ -26,7 +26,7 @@ import {
   ModalCloseButton,
   useDisclosure,
 } from '@chakra-ui/react'
-import { FaCheck, FaTimes, FaExclamationTriangle, FaCompare } from 'react-icons/fa'
+import { FaCheck, FaTimes, FaExclamationTriangle, FaExchangeAlt } from 'react-icons/fa'
 import { motion } from 'framer-motion'
 import ExportResults from '../shared/ExportResults'
 import CompareResults from '../shared/CompareResults'
@@ -140,7 +140,7 @@ export default function ScannerForm() {
             <Heading size="md">Analysis History</Heading>
             {results.length >= 2 && (
               <Button
-                leftIcon={<FaCompare />}
+                leftIcon={<FaExchangeAlt />}
                 colorScheme="purple"
                 variant="outline"
                 onClick={onOpen}

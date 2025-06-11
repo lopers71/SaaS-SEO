@@ -7,10 +7,9 @@ export const runtime = 'nodejs' // Explicitly set runtime to nodejs
 
 export async function PUT(
   request: Request,
-  context: { params: { id: string } } // Use context to explicitly type the second argument
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { params } = context; // Destructure params from context
     const token = cookies().get('token')?.value
 
     if (!token) {
@@ -25,7 +24,7 @@ export async function PUT(
       throw new Error('JWT_SECRET is not defined');
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as { userId: string }
     const userId = decoded.userId
 
     const notification = await updateNotification(params.id, userId, {
